@@ -734,10 +734,28 @@ class TableList(object):
                 self._compress_dir(**kwargs)
         elif f == "excel":
             filepath = os.path.join(dirname, basename)
-            writer = pd.ExcelWriter(filepath)
+            if os.path.isfile(filepath):
+                writer = pd.ExcelWriter(filepath,mode='a',engine='openpyxl')    
+            else:
+                writer = pd.ExcelWriter(filepath)
+            
+            start_row=0
             for table in self._tables:
-                sheet_name = f"page-{table.page}-table-{table.order}"
-                table.df.to_excel(writer, sheet_name=sheet_name, encoding="utf-8")
+                #sheet_name = f"page-{table.page}-table-{table.order}"
+                #table.df.to_excel(writer, sheet_name=sheet_name, encoding="utf-8")
+                sheet_name = f"Export"
+                if start_row==0 and writer.engine=='openpyxl':
+                        workbook=writer.book
+                        workbook.remove(workbook['Export'])
+                
+                total_rows = len(table.df.axes[0])
+
+                table.df.to_excel(writer, sheet_name=sheet_name, encoding="utf-8", startrow=start_row,header=False,index=False)
+
+                #format = workbook.add_format({'text_wrap': True})
+                #worksheet.set_column('A:G', None, format)
+                
+                start_row=start_row + total_rows + 2
             writer.save()
             if compress:
                 zipname = os.path.join(os.path.dirname(path), root) + ".zip"
